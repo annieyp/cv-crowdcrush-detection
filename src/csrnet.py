@@ -6,7 +6,7 @@ class CSRNet(nn.Module):
     def __init__(self):
         super(CSRNet, self).__init__()
 
-        #frontend
+        #frontend of VGG-16
         self.front1 = nn.Sequential(
             nn.Conv2d(3, 64, 3, padding=1),
             nn.ReLU(inplace=True),
