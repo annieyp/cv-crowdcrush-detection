@@ -30,7 +30,7 @@ class CustomImageDataset(Dataset):
     def __getitem__(self, idx):
         fname = self.img_filenames[idx]
         img_path = os.path.join(self.img_dir, fname)
-        image = decode_image(img_path)
+        image = decode_image(img_path).float() / 255.0
 
         mat_name = 'GT_' + os.path.splitext(fname)[0] + '.mat'
         mat = sio.loadmat(os.path.join(self.gt_dir, mat_name))
