@@ -45,7 +45,7 @@ class CustomImageDataset(Dataset):
 
         return image, label
     
-    def adaptive_density_map(points, img_shape, k=3, beta=0.3, min_sigma=1, max_sigma=15):
+    def adaptive_density_map(self, points, img_shape, k=3, beta=0.3, min_sigma=1, max_sigma=15):
         """
         points: (N, 2) array of (x, y) coordinates
         img_shape: (H, W)
