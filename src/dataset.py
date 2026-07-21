@@ -17,6 +17,7 @@ class CustomImageDataset(Dataset):
         )
         self.transform = transform
         self.target_transform = target_transform
+        
         #for converting points to density map 
         self.adaptive = adaptive
         self.sigma = sigma
