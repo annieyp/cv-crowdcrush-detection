@@ -39,6 +39,11 @@ class CustomImageDataset(Dataset):
         H, W = image.shape[1], image.shape[2]
         label = self.adaptive_density_map(points, (H,W), k=3, beta=0.3, min_sigma=1, max_sigma=15)
 
+        #CSRNet's frontend downsamples by 8x (3 maxpool layers), so the label
+        #must be downsampled to match the model's output resolution
+        label = self.downsample_density(label, factor=8)
+        label = torch.from_numpy(label).unsqueeze(0)
+
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
@@ -83,4 +88,15 @@ class CustomImageDataset(Dataset):
 
             density += gaussian_filter(pt_map, sigma=sigma)
 
+        return density
+
+    def downsample_density(self, density, factor=8):
+        """
+        Sum-pools the density map by `factor` so total count is preserved,
+        matching CSRNet's downsampled output resolution.
+        """
+        H, W = density.shape
+        H_ds, W_ds = H // factor, W // factor
+        density = density[:H_ds * factor, :W_ds * factor]
+        density = density.reshape(H_ds, factor, W_ds, factor).sum(axis=(1, 3))
         return density
