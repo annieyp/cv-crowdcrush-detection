@@ -3,7 +3,7 @@ import numpy as np
 import scipy.io as sio
 from scipy.ndimage import gaussian_filter
 from torch.utils.data import Dataset
-from torchvision.io import decode_image
+from torchvision.io import decode_image, ImageReadMode
 import torch
 from scipy.spatial import KDTree
 
@@ -30,7 +30,7 @@ class CustomImageDataset(Dataset):
     def __getitem__(self, idx):
         fname = self.img_filenames[idx]
         img_path = os.path.join(self.img_dir, fname)
-        image = decode_image(img_path).float() / 255.0
+        image = decode_image(img_path, mode=ImageReadMode.RGB).float() / 255.0
 
         mat_name = 'GT_' + os.path.splitext(fname)[0] + '.mat'
         mat = sio.loadmat(os.path.join(self.gt_dir, mat_name))
