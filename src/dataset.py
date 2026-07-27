@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import scipy.io as sio
-from scipy.ndimage import gaussian_filter
 from torch.utils.data import Dataset
 from torchvision.io import decode_image, ImageReadMode
 import torch
@@ -75,10 +74,6 @@ class CustomImageDataset(Dataset):
             if not (0 <= yi < H and 0 <= xi < W):
                 continue
 
-            #placeholder map
-            pt_map = np.zeros((H, W), dtype=np.float32)
-            pt_map[yi, xi] = 1
-
             if n_points > 1:
                 #average distance to nearest neighbors (excluding self at index 0)
                 avg_dist = distances[i, 1:].mean() if k_query > 1 else distances[i]
@@ -86,9 +81,29 @@ class CustomImageDataset(Dataset):
             else:
                 sigma = max_sigma #for isolated points
 
-            density += gaussian_filter(pt_map, sigma=sigma)
+            #only compute the Gaussian over a small patch around the point instead
+            #of blurring the full image (which is O(H*W) per point and was the
+            #main training bottleneck for images with many annotations)
+            radius = max(1, int(np.ceil(3 * sigma)))
+            kernel = self._gaussian_kernel(sigma, radius)
+
+            y_min, y_max = yi - radius, yi + radius + 1
+            x_min, x_max = xi - radius, xi + radius + 1
+
+            ky_min, ky_max = max(0, -y_min), kernel.shape[0] - max(0, y_max - H)
+            kx_min, kx_max = max(0, -x_min), kernel.shape[1] - max(0, x_max - W)
+
+            density[max(0, y_min):min(H, y_max), max(0, x_min):min(W, x_max)] += \
+                kernel[ky_min:ky_max, kx_min:kx_max]
 
         return density
+
+    def _gaussian_kernel(self, sigma, radius):
+        ax = np.arange(-radius, radius + 1)
+        xx, yy = np.meshgrid(ax, ax)
+        kernel = np.exp(-(xx ** 2 + yy ** 2) / (2 * sigma ** 2)).astype(np.float32)
+        kernel /= kernel.sum()
+        return kernel
 
     def downsample_density(self, density, factor=8):
         """

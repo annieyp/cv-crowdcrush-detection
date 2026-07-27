@@ -3,12 +3,13 @@ import torch.nn as nn
 
 #loss is always MSE, optimizer is always SGD
 
-def train(dataloader, model, loss_fn, optimizer):
+def train(dataloader, model, loss_fn, optimizer, device):
     size = len(dataloader.dataset)
 
     model.train()
 
     for batch, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
         pred = model(X)
         loss = loss_fn(pred, y)
 
@@ -25,7 +26,7 @@ def train(dataloader, model, loss_fn, optimizer):
             loss_val, current = loss.item(), batch * dataloader.batch_size + len(X)
             print(f"loss: {loss_val:>7f}  MAE: {mae:>7.2f}  MSE: {mse:>9.2f}  [{current:>5d}/{size:>5d}]")
 
-def test(dataloader, model, loss_fn):
+def test(dataloader, model, loss_fn, device):
     model.eval()
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
@@ -35,6 +36,7 @@ def test(dataloader, model, loss_fn):
 
     with torch.no_grad():
         for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
 
