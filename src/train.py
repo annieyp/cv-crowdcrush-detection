@@ -14,6 +14,7 @@ def train(dataloader, model, loss_fn, optimizer, device):
         loss = loss_fn(pred, y)
 
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
         optimizer.zero_grad()
 
