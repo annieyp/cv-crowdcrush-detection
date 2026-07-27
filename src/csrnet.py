@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+from torchvision.models import vgg16, VGG16_Weights
 
 
 class CSRNet(nn.Module):
-    def __init__(self):
+    def __init__(self, load_weights=True):
         super(CSRNet, self).__init__()
 
         #frontend of VGG-16
@@ -60,6 +61,10 @@ class CSRNet(nn.Module):
 
         self.outputLayer = nn.Conv2d(64, 1, kernel_size=1)
 
+        self._initialize_weights()
+        if load_weights:
+            self._load_pretrained_frontend()
+
     def forward(self, x):
         x = self.front1(x)
         x = self.front2(x)
@@ -69,3 +74,22 @@ class CSRNet(nn.Module):
         x = self.outputLayer(x)
 
         return x
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, std=0.01)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+
+    def _load_pretrained_frontend(self):
+        vgg = vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
+        vgg_convs = [m for m in vgg.features if isinstance(m, nn.Conv2d)]
+        frontend_convs = [
+            m for block in (self.front1, self.front2, self.front3, self.front4)
+            for m in block if isinstance(m, nn.Conv2d)
+        ]
+
+        for src, dst in zip(vgg_convs, frontend_convs):
+            dst.weight.data[:] = src.weight.data
+            dst.bias.data[:] = src.bias.data

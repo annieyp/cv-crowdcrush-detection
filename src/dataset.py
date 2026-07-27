@@ -3,8 +3,13 @@ import numpy as np
 import scipy.io as sio
 from torch.utils.data import Dataset
 from torchvision.io import decode_image, ImageReadMode
+import torchvision.transforms.functional as TF
 import torch
 from scipy.spatial import KDTree
+
+#pretrained VGG16 frontend (see csrnet.py) expects ImageNet-normalized input
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
 
 class CustomImageDataset(Dataset):
     def __init__(self, gt_dir, img_dir, sigma, k, beta, transform=None, target_transform=None,
@@ -30,6 +35,7 @@ class CustomImageDataset(Dataset):
         fname = self.img_filenames[idx]
         img_path = os.path.join(self.img_dir, fname)
         image = decode_image(img_path, mode=ImageReadMode.RGB).float() / 255.0
+        image = TF.normalize(image, mean=IMAGENET_MEAN, std=IMAGENET_STD)
 
         mat_name = 'GT_' + os.path.splitext(fname)[0] + '.mat'
         mat = sio.loadmat(os.path.join(self.gt_dir, mat_name))
